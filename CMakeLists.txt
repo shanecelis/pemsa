@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
+
+set(PICO_SDK_PATH "~/hackclub/raspberrypi/pico-sdk")
+set(PICO_EXTRAS_PATH "~/hackclub/raspberrypi/pico-extras")
+include(${CMAKE_CURRENT_SOURCE_DIR}/../pico_sdk_import.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../pico_extras_import.cmake)
 project(pemsa)
+pico_sdk_init()
+enable_language(C CXX ASM)
+
+add_compile_definitions(PICO)
+add_compile_definitions(PICO_HEAP_SIZE=16384)
 
 message(STATUS ${CMAKE_CURRENT_SOURCE_DIR}/get_git_commit.cmd)
 
@@ -21,7 +31,7 @@ IF( DEFINED WINDOWS )
 	add_compile_definitions(WINDOWS)
 ENDIF( DEFINED WINDOWS )
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(libs/fixmath)
@@ -46,7 +56,7 @@ add_library(pemsa STATIC src/pemsa/pemsa_emulator.cpp src/pemsa/pemsa_backend.cp
 	src/pemsa/audio/pemsa_audio_channel.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/lua/ ${CMAKE_CURRENT_SOURCE_DIR}/libs/fixmath/ ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-target_link_libraries(pemsa customlua fixmath)
+target_link_libraries(pemsa customlua fixmath pico_multicore pico_stdlib pico_time)
 add_dependencies(pemsa write_git_hash)
 
 set_target_properties(pemsa PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dist/)

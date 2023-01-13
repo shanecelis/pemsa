@@ -6,7 +6,7 @@
 #include <cstring>
 #include <algorithm>
 
-#ifdef WINDOWS
+#if defined(WINDOWS) || defined(__APPLE__)
 #include <sstream>
 #endif
 

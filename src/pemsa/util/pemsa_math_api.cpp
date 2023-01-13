@@ -8,6 +8,9 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #endif
+#ifdef PICO
+#include <pico/time.h>
+#endif
 
 static PemsaEmulator* emulator;
 
@@ -177,7 +180,11 @@ static int chr(lua_State* state) {
 
 void pemsa_open_math_api(PemsaEmulator* machine, lua_State* state) {
 	emulator = machine;
+#ifndef PICO
 	srand(time(nullptr));
+#else
+	srand(to_ms_since_boot(get_absolute_time()));
+#endif
 
 	lua_register(state, "__rnd", rnd);
 	lua_register(state, "srand", srand);

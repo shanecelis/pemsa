@@ -1,7 +1,6 @@
 #include "pemsa/graphics/pemsa_graphics_module.hpp"
 #include "pemsa/pemsa_emulator.hpp"
 
-#include <mutex>
 #include <iostream>
 
 #define PEMSA_LOW_FPS_DELTA 1 / 30.0

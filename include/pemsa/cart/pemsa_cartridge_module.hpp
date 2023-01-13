@@ -4,9 +4,11 @@
 #include "pemsa/pemsa_module.hpp"
 #include "pemsa/cart/pemsa_cartridge.hpp"
 
+#ifndef PICO
 #include <condition_variable>
 #include <thread>
 #include <future>
+#endif
 
 // #define PEMSA_SAVE_CODE
 
@@ -29,7 +31,9 @@ class PemsaCartridgeModule : public PemsaModule {
 		void stop();
 
 		PemsaCartridge* getCart();
+#ifndef PICO
 		std::mutex* getMutex();
+#endif
 
 		void waitForNextFrame();
 		void setPaused(bool paused);
@@ -42,9 +46,12 @@ class PemsaCartridgeModule : public PemsaModule {
 	private:
 		PemsaCartridge* cart;
 
+#ifndef PICO
+
 		std::condition_variable lock;
 		std::mutex mutex;
 		std::thread* gameThread;
+#endif
 		const char* lastLoaded;
 
 		bool enableSplash;
@@ -58,7 +65,11 @@ class PemsaCartridgeModule : public PemsaModule {
 		bool done;
 		bool firstLaunch;
 
+		void gameInit();
+		void gameTick();
+#ifndef PICO
 		void gameLoop();
+#endif
 
 		void callIfExists(const char* function);
 		bool globalExists(const char* name);

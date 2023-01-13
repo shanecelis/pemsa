@@ -101,7 +101,9 @@ PemsaCartridgeModule::PemsaCartridgeModule(PemsaEmulator *emulator, bool enableS
 	this->lastLoaded = nullptr;
 	this->cart = nullptr;
 	this->done = false;
+	#ifndef PICO
 	this->gameThread = nullptr;
+	#endif
 	this->firstLaunch = true;
 }
 
@@ -403,7 +405,9 @@ bool PemsaCartridgeModule::loadFromStringStream(const char* path, std::stringstr
 	pemsa_open_audio_api(emulator, state);
 
 	memcpy(emulator->getMemoryModule()->ram, rom, 0x4300);
+#ifndef PICO
 	this->gameThread = new std::thread(&PemsaCartridgeModule::gameLoop, this);
+#endif
 
 	return true;
 }
@@ -432,9 +436,11 @@ bool PemsaCartridgeModule::load(const char *path, bool onlyLoad) {
 	return this->loadFromString(path, string.str(), onlyLoad);
 }
 
+#ifndef PICO
 std::mutex *PemsaCartridgeModule::getMutex() {
 	return &this->mutex;
 }
+#endif
 
 PemsaCartridge *PemsaCartridgeModule::getCart() {
 	return this->cart;
@@ -444,7 +450,7 @@ void empty_hook(lua_State* L, lua_Debug *ar) {
 
 }
 
-void PemsaCartridgeModule::gameLoop() {
+void PemsaCartridgeModule::gameInit() {
 	this->threadRunning = true;
 	this->waiting = false;
 	this->destruct = false;
@@ -483,21 +489,31 @@ void PemsaCartridgeModule::gameLoop() {
 	// the actual cart, like in bingle jells. without this the menu will be skipped
 	this->emulator->getInputModule()->updateInput();
 	this->callIfExists("_init");
+}
+
+void PemsaCartridgeModule::gameTick() {
+	if (!this->paused) {
+		if (this->cart->highFps) {
+			this->callIfExists("_update60");
+		} else {
+			this->callIfExists("_update");
+		}
+
+		this->callIfExists("_draw");
+	}
+}
+
+#ifndef PICO
+void PemsaCartridgeModule::gameLoop() {
+	this->gameInit();
 
 	while (this->threadRunning) {
-		if (!this->paused) {
-			if (this->cart->highFps) {
-				this->callIfExists("_update60");
-			} else {
-				this->callIfExists("_update");
-			}
-
-			this->callIfExists("_draw");
-		}
+		this->gameTick();
 
 		this->waitForNextFrame();
 	}
 }
+#endif
 
 void PemsaCartridgeModule::cleanupCart() {
 	this->done = true;
@@ -505,7 +521,7 @@ void PemsaCartridgeModule::cleanupCart() {
 	if (this->cart == nullptr) {
 		return;
 	}
-
+#ifndef PICO
 	if (this->threadRunning) {
 		this->stop();
 
@@ -519,6 +535,12 @@ void PemsaCartridgeModule::cleanupCart() {
 
 		delete this->gameThread;
 	}
+#else
+    this->stop();
+	if (this->cart->state) {
+		lua_close(this->cart->state);
+	}
+#endif
 
 	this->saveData();
 
@@ -648,7 +670,9 @@ void PemsaCartridgeModule::stop() {
 	this->threadRunning = false;
 	this->waiting = false;
 
+#ifndef PICO
 	this->lock.notify_all();
+#endif
 }
 
 void PemsaCartridgeModule::waitForNextFrame() {
@@ -657,16 +681,20 @@ void PemsaCartridgeModule::waitForNextFrame() {
 	// this->emulator->setMemoryModule(this->emulator->getActualMemoryModule());
 
 	this->waiting = true;
+#ifndef PICO
+	#warning this is not ready.
 	std::unique_lock<std::mutex> uniqueLock(this->mutex);
 
 	this->lock.wait(uniqueLock, [this] {
 		return !this->waiting || !this->threadRunning;
 	});
+#endif
 
 	if (this->threadRunning) {
 		this->emulator->getInputModule()->updateInput();
 		this->cart->time += 1.0 / (this->cart->highFps ? 60 : 30);
 	}
+
 }
 
 void PemsaCartridgeModule::setPaused(bool paused) {
@@ -679,7 +707,9 @@ void PemsaCartridgeModule::initiateSelfDestruct() {
 
 void PemsaCartridgeModule::allowExecutionOfNextFrame() {
 	this->waiting = false;
+	#ifndef PICO
 	this->lock.notify_all();
+	#endif
 }
 
 bool PemsaCartridgeModule::save(const char* path, bool useCodeTag) {
@@ -831,8 +861,12 @@ bool PemsaCartridgeModule::hasNewFrame() {
 void PemsaCartridgeModule::reset() {
 	PemsaModule::reset();
 
+	#ifndef PICO
 	auto thread = this->gameThread;
 	bool cleanup = thread != nullptr && this->cart != nullptr;
+	#else
+	bool cleanup = this->cart != nullptr;
+	#endif
 
 	this->destruct = false;
 	this->threadRunning = false;
@@ -843,12 +877,14 @@ void PemsaCartridgeModule::reset() {
 	this->cart = nullptr;
 	this->done = false;
 
+	#ifndef PICO
 	if (cleanup && thread != nullptr) {
 		this->lock.notify_all();
 		this->gameThread->join();
 
 		delete this->gameThread;
 	}
+	#endif
 }
 
 bool PemsaCartridgeModule::isDone() {

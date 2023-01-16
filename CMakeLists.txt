@@ -1,15 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(PICO_SDK_PATH "~/hackclub/raspberrypi/pico-sdk")
-set(PICO_EXTRAS_PATH "~/hackclub/raspberrypi/pico-extras")
-include(${CMAKE_CURRENT_SOURCE_DIR}/../pico_sdk_import.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../pico_extras_import.cmake)
 project(pemsa)
-pico_sdk_init()
-enable_language(C CXX ASM)
 
 add_compile_definitions(PICO)
 add_compile_definitions(PICO_HEAP_SIZE=16384)
+add_compile_options(-fno-rtti)
 
 message(STATUS ${CMAKE_CURRENT_SOURCE_DIR}/get_git_commit.cmd)
 

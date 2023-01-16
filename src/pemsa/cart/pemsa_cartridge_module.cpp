@@ -114,6 +114,10 @@ PemsaCartridgeModule::~PemsaCartridgeModule() {
 }
 
 void PemsaCartridgeModule::update(double dt) {
+
+#ifdef PICO
+	this->gameTick();
+#endif
 	if (this->destruct) {
 		this->destruct = false;
 		this->cleanupCart();
@@ -413,6 +417,8 @@ bool PemsaCartridgeModule::loadFromStringStream(const char* path, std::stringstr
 	memcpy(emulator->getMemoryModule()->ram, rom, 0x4300);
 #ifndef PICO
 	this->gameThread = new std::thread(&PemsaCartridgeModule::gameLoop, this);
+#else
+	this->gameInit();
 #endif
 
 	return true;
@@ -508,6 +514,7 @@ void PemsaCartridgeModule::gameTick() {
 
 		this->callIfExists("_draw");
 	}
+	this->waitForNextFrame();
 }
 
 #ifndef PICO
@@ -516,8 +523,6 @@ void PemsaCartridgeModule::gameLoop() {
 
 	while (this->threadRunning) {
 		this->gameTick();
-
-		this->waitForNextFrame();
 	}
 }
 #endif

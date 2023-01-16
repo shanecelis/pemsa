@@ -23,11 +23,13 @@ class PemsaCartridgeModule : public PemsaModule {
 		void cleanupAndLoad(const char* path, bool onlyLoad = false);
 		bool loadFromStringStream(const char* path, std::stringstream string, bool onlyLoad);
 		bool loadFromString(const char* path, std::string string, bool onlyLoad);
+#ifdef FILESYTEM
 		bool load(const char* path, bool onlyLoad = false);
 		bool save(const char* path, bool useCodeTag = true);
 
 		void loadData(const char* path);
 		void saveData();
+#endif
 		void stop();
 
 		PemsaCartridge* getCart();

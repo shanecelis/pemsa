@@ -1,6 +1,8 @@
 #include "pemsa/pemsa_emulator.hpp"
 
+#ifdef FILESYSTEM
 #include <filesystem>
+#endif
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -10,7 +12,9 @@
 #include <sstream>
 #endif
 
+#ifdef FILESYSTEM
 namespace fs = std::filesystem;
+#endif
 
 static PemsaEmulator* emulator;
 
@@ -33,7 +37,9 @@ static int dset(lua_State* state) {
 		PemsaCartridgeModule* cartridgeModule = emulator->getCartridgeModule();
 
 		cartridgeModule->getCart()->cartData[index] = pemsa_checknumber_raw(state, 2);
+#ifdef FILESYSTEM
 		cartridgeModule->saveData();
+#endif
 	}
 
 	return 0;
@@ -41,7 +47,9 @@ static int dset(lua_State* state) {
 
 static int cartdata(lua_State* state) {
 	const char* name = luaL_checkstring(state, 1);
+#ifdef FILESYSTEM
 	emulator->getCartridgeModule()->loadData(name);
+#endif
 
 	return 0;
 }
@@ -71,6 +79,7 @@ static int list_carts(lua_State* state) {
 	lua_newtable(state);
 	int i = 1;
 
+	#ifdef FILESYSTEM
 	for (const auto & entry : fs::recursive_directory_iterator("./")) {
 		if (entry.is_directory() || entry.path().extension() != ".p8") {
 			continue;
@@ -100,6 +109,7 @@ static int list_carts(lua_State* state) {
 
 		lua_rawseti(state, -2, i++);
 	}
+	#endif
 
 	return 1;
 }
@@ -117,6 +127,9 @@ static inline void rtrim(std::string &s) {
 }
 
 static int read_cdata(lua_State* state) {
+	#ifndef FILESYSTEM
+	return 0;
+	#else
 	if (lua_gettop(state) == 0) {
 		return 0;
 	}
@@ -195,6 +208,7 @@ static int read_cdata(lua_State* state) {
 	lua_pushstring(state, label.str().c_str());
 
 	return 3;
+	#endif
 }
 
 void pemsa_open_cartridge_api(PemsaEmulator* machine, lua_State* state) {

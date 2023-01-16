@@ -9,10 +9,12 @@
 #include "lstate.h"
 
 #include <iostream>
+#ifdef FILESYSTEM
 #include <fstream>
+#include <filesystem>
+#endif
 #include <string>
 #include <cstring>
-#include <filesystem>
 #include <sstream>
 #include <algorithm>
 
@@ -364,7 +366,11 @@ bool PemsaCartridgeModule::loadFromStringStream(const char* path, std::stringstr
 	this->lastLoaded = path;
 
 	lua_State* state = luaL_newstate();
+	#ifdef FILESYSTEM
 	std::string stem = std::filesystem::path(path).stem().string();
+	#else
+	std::string stem = path;
+	#endif
 
 	this->cart->state = state;
 	this->cart->cartDataId = take_string(stem);
@@ -411,7 +417,7 @@ bool PemsaCartridgeModule::loadFromStringStream(const char* path, std::stringstr
 
 	return true;
 }
-
+#ifdef FILESYSTEM
 bool PemsaCartridgeModule::load(const char *path, bool onlyLoad) {
 	if (!this->firstLaunch) {
 		emulator->reset();
@@ -435,6 +441,7 @@ bool PemsaCartridgeModule::load(const char *path, bool onlyLoad) {
 
 	return this->loadFromString(path, string.str(), onlyLoad);
 }
+#endif
 
 #ifndef PICO
 std::mutex *PemsaCartridgeModule::getMutex() {
@@ -542,7 +549,9 @@ void PemsaCartridgeModule::cleanupCart() {
 	}
 #endif
 
+#ifdef FILESYSTEM
 	this->saveData();
+#endif
 
 	PemsaCartridge* cart = this->cart;
 	this->cart = nullptr;
@@ -557,7 +566,9 @@ void PemsaCartridgeModule::cleanupCart() {
 	}
 
 	if (this->nextPath) {
+#ifdef FILESYSTEM
 		this->load(this->nextPath, this->onlyLoad);
+#endif
 		this->nextPath = nullptr;
 	}
 }
@@ -608,6 +619,7 @@ void PemsaCartridgeModule::reportLuaError() {
 	}
 }
 
+#ifdef FILESYSTEM
 void PemsaCartridgeModule::loadData(const char *path) {
 	if (this->cart == nullptr) {
 		return;
@@ -656,6 +668,7 @@ void PemsaCartridgeModule::saveData() {
 
 	file.close();
 }
+#endif
 
 void hook(lua_State* L, lua_Debug *ar) {
 	luaL_error(L, "the cart was stopped");
@@ -712,6 +725,7 @@ void PemsaCartridgeModule::allowExecutionOfNextFrame() {
 	#endif
 }
 
+#ifdef FILESYSTEM
 bool PemsaCartridgeModule::save(const char* path, bool useCodeTag) {
 	if (this->cart == nullptr) {
 		return false;
@@ -853,6 +867,7 @@ bool PemsaCartridgeModule::save(const char* path, bool useCodeTag) {
 	file.close();
 	return true;
 }
+#endif
 
 bool PemsaCartridgeModule::hasNewFrame() {
 	return this->waiting;

@@ -4,7 +4,6 @@ project(pemsa)
 
 add_compile_definitions(PICO)
 add_compile_definitions(PICO_HEAP_SIZE=16384)
-add_compile_options(-fno-rtti)
 
 message(STATUS ${CMAKE_CURRENT_SOURCE_DIR}/get_git_commit.cmd)
 
